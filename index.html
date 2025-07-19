@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>เกมเรียงประโยค</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap');
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      margin: 0; padding: 0;
+      display: flex; justify-content: center;
+      background: linear-gradient(135deg, #e3f2fd 0%, #f1f8e9 100%);
+      min-height: 100vh;
+    }
+    #main {
+      display: flex;
+      width: 95%; max-width: 1200px;
+      background: #ffffffcc;
+      margin: 40px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    /* ฝั่งเกม */
+    #game-area {
+      flex: 3; padding: 30px; position: relative;
+    }
+    #message {
+      margin-bottom: 15px;
+      font-size: 22px; font-weight: 700;
+      color: #2e7d32; height: 28px;
+      transition: all 0.3s ease;
+    }
+    #explanation-box {
+      display: none;
+      border: 2px dashed #00796b;
+      background: #e0f2f1;
+      padding: 14px; border-radius: 6px;
+      margin-bottom: 25px; line-height: 1.5;
+      animation: fadeIn 0.5s ease-out;
+    }
+    #scramble-container {
+      min-height: 120px;
+      border: 3px dashed #64b5f6;
+      padding: 15px; display: flex;
+      flex-wrap: wrap; margin-bottom: 25px;
+      background: #e3f2fd; border-radius: 6px;
+    }
+    .word {
+      cursor: move; user-select: none;
+      padding: 10px 16px; margin: 6px;
+      background: #ffeb3b; border: 2px solid #fbc02d;
+      border-radius: 6px; font-size: 18px;
+      font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      transition: transform 0.2s ease;
+    }
+    .word:hover { transform: scale(1.1); }
+
+    /* ปุ่มถัดไป */
+    #next-btn {
+      display: none;
+      padding: 12px 26px; font-size: 18px;
+      background: #1976d2; color: #fff;
+      border: none; border-radius: 6px;
+      cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+      transition: background 0.3s ease;
+    }
+    #next-btn:hover { background: #1565c0; }
+
+    /* ปุ่มหน้าหลัก แสดงตลอดเวลา */
+    #home-btn {
+      display: inline-block;
+      margin-left: 10px;
+      padding: 12px 26px; font-size: 18px;
+      background: #ff7043; color: #fff;
+      border: none; border-radius: 6px;
+      cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+      transition: background 0.3s ease;
+    }
+    #home-btn:hover { background: #f4511e; }
+
+    /* ฝั่ง sidebar */
+    #sidebar {
+      flex: 1; border-left: 2px solid #ddd;
+      padding: 30px 20px; background: #f1f8e9;
+    }
+    #question-numbers {
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 12px; margin-bottom: 24px;
+    }
+    .number {
+      width: 34px; height: 34px; line-height: 34px;
+      text-align: center; margin: 4px;
+      border: 2px solid #9e9e9e; border-radius: 6px;
+      display: inline-block; color: #555;
+      font-weight: 600; transition: all 0.3s ease;
+    }
+    .number.active {
+      border-color: #388e3c;
+      background: #c8e6c9;
+      color: #2e7d32;
+      transform: scale(1.1);
+    }
+    .answer {
+      margin-bottom: 12px; padding: 8px;
+      background: #e8f5e9; border-left: 6px solid #388e3c;
+      border-radius: 4px; font-size: 16px;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div id="main">
+    <!-- ฝั่งเกม -->
+    <div id="game-area">
+      <div id="message"></div>
+      <div id="explanation-box"></div>
+      <div id="scramble-container"></div>
+      <button id="next-btn">ข้อถัดไป</button>
+      <button id="home-btn" onclick="location.href='https://kornvenus.github.io/Thinko-KIDs/'">
+        หน้าหลัก
+      </button>
+    </div>
+
+    <!-- ฝั่ง sidebar -->
+    <div id="sidebar">
+      <div id="question-numbers"></div>
+      <div id="completed-answers"></div>
+    </div>
+  </div>
+
+  <script>
+    const sentences = [
+      ["ฉัน","ไป","โรงเรียน","ทุกวัน"],
+      ["พ่อแม่","พา","ฉัน","ไป","เที่ยว","สวนสัตว์","เมื่อวานนี้"],
+      ["วันนี้","อากาศ","ร้อน","มาก"],
+      ["ฉัน","ชอบ","อ่าน","หนังสือ","หลัง","เลิกเรียน"],
+      ["เพื่อนๆ","เล่นเกม","พร้อมกัน","ที่","บ้าน"],
+      ["ครู","สอน","วิชา","คณิตศาสตร์","อย่าง","สนุกสนาน"],
+      ["นก","ตัวนั้น","บิน","อยู่","บน","ต้นไม้","สูง"],
+      ["เรา","ไป","ว่ายน้ำ","ที่","สระ","ทุกสุดสัปดาห์"],
+      ["รถเมล์","แล่น","ผ่าน","ถนน","หน้า","โรงเรียน"],
+      ["ลูกหมา","ตัวเล็ก","วิ่งเล่น","ใน","สวน","หลังบ้าน"]
+    ];
+    const explanations = [
+      { subject:"ฉัน", verb:"ไป", object:"โรงเรียนทุกวัน" },
+      { subject:"พ่อแม่", verb:"พา", object:"ฉันไปเที่ยวสวนสัตว์เมื่อวานนี้" },
+      { subject:"อากาศ", verb:"ร้อน", object:"มาก" },
+      { subject:"ฉัน", verb:"ชอบอ่าน", object:"หนังสือหลังเลิกเรียน" },
+      { subject:"เพื่อนๆ", verb:"เล่น", object:"เกมพร้อมกันที่บ้าน" },
+      { subject:"ครู", verb:"สอน", object:"วิชาคณิตศาสตร์อย่างสนุกสนาน" },
+      { subject:"นกตัวนั้น", verb:"บินอยู่", object:"บนต้นไม้สูง" },
+      { subject:"เรา", verb:"ไปว่ายน้ำ", object:"ที่สระทุกสุดสัปดาห์" },
+      { subject:"รถเมล์", verb:"แล่นผ่าน", object:"ถนนหน้าโรงเรียน" },
+      { subject:"ลูกหมาตัวเล็ก", verb:"วิ่งเล่น", object:"ในสวนหลังบ้าน" }
+    ];
+
+    let current = 0;
+    const total = sentences.length;
+    const numbersContainer = document.getElementById('question-numbers');
+    const scrambleContainer = document.getElementById('scramble-container');
+    const nextBtn = document.getElementById('next-btn');
+    const homeBtn = document.getElementById('home-btn');
+    const completedContainer = document.getElementById('completed-answers');
+    const messageDiv = document.getElementById('message');
+    const explanationBox = document.getElementById('explanation-box');
+
+    init();
+
+    function init() {
+      renderNumbers();
+      loadQuestion();
+    }
+
+    function renderNumbers() {
+      numbersContainer.innerHTML = '';
+      for (let i = 0; i < total; i++) {
+        const num = document.createElement('div');
+        num.className = 'number' + (i === current ? ' active' : '');
+        num.innerText = i + 1;
+        numbersContainer.appendChild(num);
+      }
+    }
+
+    function shuffleArray(arr) {
+      return arr
+        .map(v => ({ v, sort: Math.random() }))
+        .sort((a, b) => a.sort - b.sort)
+        .map(({ v }) => v);
+    }
+
+    function loadQuestion() {
+      // รีเซ็ต UI
+      messageDiv.innerText = '';
+      explanationBox.style.display = 'none';
+      scrambleContainer.innerHTML = '';
+      nextBtn.style.display = 'none';
+      // ปุ่ม homeBtn แสดงอยู่แล้ว ไม่ต้องตั้งซ่อน
+
+      renderNumbers();
+
+      // กำหนดปุ่ม next
+      if (current === total - 1) {
+        nextBtn.innerText = 'หน้าหลัก';
+        nextBtn.onclick = () => homeBtn.click();
+      } else {
+        nextBtn.innerText = 'ข้อถัดไป';
+        nextBtn.onclick = handleNext;
+      }
+
+      // สุ่มคำแล้วแสดง
+      const words = sentences[current].slice();
+      const scrambled = shuffleArray(words);
+      scrambled.forEach(word => {
+        const span = document.createElement('span');
+        span.className = 'word';
+        span.draggable = true;
+        span.innerText = word;
+        addDragHandlers(span);
+        scrambleContainer.appendChild(span);
+      });
+    }
+
+    let dragSrcEl = null;
+    function addDragHandlers(elem) {
+      elem.addEventListener('dragstart', e => {
+        dragSrcEl = elem;
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      elem.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      });
+      elem.addEventListener('drop', e => {
+        e.preventDefault();
+        if (dragSrcEl !== elem) {
+          [elem.innerText, dragSrcEl.innerText] =
+            [dragSrcEl.innerText, elem.innerText];
+          checkAnswer();
+        }
+      });
+    }
+
+    function checkAnswer() {
+      const arranged = Array.from(scrambleContainer.children)
+        .map(el => el.innerText);
+      if (arranged.join(' ') === sentences[current].join(' ')) {
+        nextBtn.style.display = 'inline-block';
+        messageDiv.innerText = 'ยินดีด้วย! เรียงประโยคถูกต้องแล้ว 🎉';
+        const exp = explanations[current];
+        explanationBox.innerHTML = `
+          <strong>ประธาน:</strong> ${exp.subject}<br>
+          <strong>กิริยา:</strong> ${exp.verb}<br>
+          <strong>กรรม:</strong> ${exp.object}<br>
+          ดังนั้นรูปแบบประโยค คือ${sentences[current].join(' ')}แล้วเอาทั้งหมดมาเรียงให้ถูกต้อง
+        `;
+        explanationBox.style.display = 'block';
+      }
+    }
+
+    function handleNext() {
+      const div = document.createElement('div');
+      div.className = 'answer';
+      div.innerText = sentences[current].join(' ');
+      completedContainer.appendChild(div);
+      current++;
+      loadQuestion();
+    }
+  </script>
+</body>
+</html>
